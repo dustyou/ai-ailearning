@@ -18,7 +18,7 @@ from torch import nn
 embedding = nn.Embedding(10, 3)
 input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
 print(embedding(input))
-print(embedding.size())
+print(embedding.shape)
 
 
 # nn.Dropout演示
