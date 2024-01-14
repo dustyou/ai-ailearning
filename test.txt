@@ -1,0 +1,55 @@
+C:\windows\system32
+D:\Program Files\Learn\Python\Scripts\
+D:\Program Files\Learn\Python\
+D:\Program Files\Learn\Java\jdk\lib
+D:\Program Files\Learn\Java\jdk\bin
+C:\Program Files (x86)\Common Files\Oracle\Java\javapath
+D:\Program Files\Learn\ChemOffice2016\ChemScript\Lib
+C:\Program Files (x86)\Intel\iCLS Client\
+C:\ProgramData\Oracle\Java\javapath
+C:\Program Files\Intel\iCLS Client\
+C:\windows
+C:\windows\System32\Wbem
+C:\windows\System32\WindowsPowerShell\v1.0\
+C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common
+D:\Program Files\Learn\MATLAB\MATLAB Production Server\R2017a\runtime\win64
+D:\Program Files\Learn\MATLAB\MATLAB Production Server\R2017a\bin
+C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\DAL
+C:\Program Files\Intel\Intel(R) Management Engine Components\DAL
+C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\IPT
+C:\Program Files\Intel\Intel(R) Management Engine Components\IPT
+C:\Program Files (x86)\Common Files\Bruker Daltonik\DLLs\
+C:\Program Files (x86)\Common Files\Bruker Daltonik\NTDS\Bin
+C:\Program Files (x86)\Common Files\Bruker Daltonik\DLLs
+C:\WINDOWS\system32
+C:\WINDOWS
+C:\WINDOWS\System32\Wbem
+C:\WINDOWS\System32\WindowsPowerShell\v1.0\
+C:\WINDOWS\System32\OpenSSH\
+C:\Program Files\dotnet\
+C:\Program Files\Common Files\Autodesk Shared\
+D:\Program Files\Learn\mysql-5.7.27-winx64\bin
+D:\Program Files\Learn\Java\nodejs\
+D:\Program Files\Learn\Java\apache-maven\bin
+D:\Program Files\Learn\Git\cmd
+D:\Program Files\Learn\consul
+D:\Program Files\Learn\erlang\bin
+D:\ProgramFiles\Learn\RabbitMQ\rabbitmq_server-3.7.18\sbin
+D:\Program Files\Learn\TortoiseGit\bin
+D:\Program Files\Learn\Java\nodejs
+D:\Program Files\Learn\Java\nodejs\node_global
+D:\Program Files\System\Google\Chrome\Application
+D:\Program Files\Learn\微信web开发 者工具\dll
+D:\Program Files\Learn\Python\Python312
+D:\Program Files\Learn\Python\Python312\Scripts\
+D:\Program Files\Learn\Python\Python312\
+C:\Users\Michael\AppData\Local\Microsoft\WindowsApps
+D:\Program Files\Learn\Microsoft VS Code\bin
+C:\Users\Michael\.dotnet\tools
+D:\Program Files\Learn\IntelliJ IDEA\bin
+C:\Users\Michael\AppData\Local\BypassRuntm
+C:\Users\Michael\AppData\Roaming\npm
+
+D:\Program Files\Learn\JetBrains\Toolbox\apps\IDEA-U\ch-0\201.6668.121\bin
+
+C:\Users\Michael\AppData\Local\Microsoft\WindowsApps
