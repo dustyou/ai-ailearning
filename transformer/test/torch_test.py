@@ -15,10 +15,10 @@ from torch import nn
 # print(c.size(), c)
 
 # # embedding
-# embedding = nn.Embedding(10, 3)
-# input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
-# print(embedding(input))
-# print(embedding.size())
+embedding = nn.Embedding(10, 3)
+input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
+print(embedding(input))
+print(embedding.size())
 
 
 # nn.Dropout演示
