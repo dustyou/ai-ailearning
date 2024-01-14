@@ -15,18 +15,18 @@ from transformer.embedding import Embeddings
 
 
 class PositionalEncoding(nn.Module):
-    def __init_(self, d_model, dropout, max_len=5000):
-        # d model:f代表词嵌入的维度
+    def __init__(self, d_model, dropout, max_len=5000):
+        # d_model:f代表词嵌入的维度
         # dropout:代Dropout层的置零比事
         # max_len:代表每个句子的最大长度
-        super(PositionalEncoding, self)._init_()
+        super(PositionalEncoding, self).__init__()
         # 实例化Dropout层
         self.dropout = nn.Dropout(p=dropout)
         # 初始化一个位置编码炬阵，大小是nax_len*d_model
         pe = torch.zeros(max_len, d_model)
         # 切始化一个绝对位置矩阵，max_len*1
         position = torch.arange(0, max_len).unsqueeze(1)
-        # 定义一个变化矩阵d1 vterm,姚跃式的切始化
+        # 定义一个变化矩阵d1 vterm,跳跃式的切始化
         div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model))
         # 将前而定义的变化矩阵进行奇数，得数的分属值
         pe[:, 0::2] = torch.sin(position * div_term)
