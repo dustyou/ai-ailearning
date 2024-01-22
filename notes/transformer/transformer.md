@@ -2,6 +2,8 @@
 
 # 输入部分实现
 
+## 文本嵌入层
+
 ## 基础方法介绍
 
 代码链接:  [embedding_test.py](..\..\transformer\test\embedding_test.py) 
