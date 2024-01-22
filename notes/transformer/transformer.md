@@ -6,7 +6,7 @@
 
 代码链接:  [embedding_test.py](..\..\transformer\test\embedding_test.py) 
 
-###  embedding
+###  embedding(词嵌入)
 
 Embedding是一种将离散数据映射到连续向量空间中的技术，主要用于深度学习模型中。通过将离散数据映射到连续向量空间，可以使模型更好地处理这些数据，并提高模型的性能和准确性。
 
@@ -70,7 +70,7 @@ tensor([4, 3])
 
 第一个输出是一个4x3的张量，其中每个元素都是一个3维向量。第二个输出是嵌入层的大小，它是一个2维张量，表示嵌入层的维度。
 
-对于一个M×N的输入 input, input的所有元素枚举数量为num_embeddings(最多有num_embeddings个不同的数字),   进行nn.Embedding(num_embeddings, embedding_dim)操作后
+对于一个M×N的输入 input, input的所有元素枚举数量为num_embeddings(最多有num_embeddings个不同的数字),   进行nn.Embedding(num_embeddings, embedding_dim)操作后, 得到一个M×
 
 embeddings类
 
