@@ -4,7 +4,7 @@
 
 ## 基础方法介绍
 
-代码链接: [./transformer/torch_test.py](./transformer/torch_test.py)
+代码链接:
 
 ###  embedding
 
