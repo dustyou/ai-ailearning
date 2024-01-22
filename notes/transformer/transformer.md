@@ -92,8 +92,9 @@ import copy
 # 定义一个名为 "Embeddings" 的类，该类继承自 "torch.nn.Module"。
 # 在 PyTorch 中，自定义的神经网络模块需要继承自 "torch.nn.Module"。
 class Embeddings(torch.nn.Module):
-    # d_model
+    # d_model: 词映射的维度, nn.Embedding方法的 embedding_dim 参数
     # vocab: 词汇表的大小
+    # 
     def __init__(self, d_model, vocab):
         # 调用父类 "torch.nn.Module" 的初始化方法。这是必需的，以确保实例可以正确地注册子模块等。
         super(Embeddings, self).__init__()
