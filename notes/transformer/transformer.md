@@ -74,11 +74,9 @@ tensor([4, 3])
 
 embeddings类
 
-### 代码实例
+#### 代码实例
 
-
-
-
+ [embedding.py](..\..\transformer\embedding.py) 
 
 ```python
 import torch
