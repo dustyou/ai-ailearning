@@ -1,5 +1,5 @@
-import nn
 import torch
+from torch import nn
 
 print('start')
 embedding = nn.Embedding(10, 3)
