@@ -35,4 +35,4 @@ x = Variable(torch.LongTensor([[100,2,421,508], [491,998,1,221]]))
 emb = Embeddings(d_model, vocab)
 embr = emb(x)
 print('embr: ', embr)
-print('embr: ', embr.shape)
+print('embr: ', embr.shape) # 2,4,512
