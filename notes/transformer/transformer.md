@@ -35,6 +35,9 @@ One-hot编码的主要优点是可以将离散的标签转换为连续的向量�
 
 
 ```python
+import torch
+from torch import nn
+
 embedding = nn.Embedding(10, 3)
 input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
 print(embedding(input))
