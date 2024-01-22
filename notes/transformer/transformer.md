@@ -92,7 +92,8 @@ import copy
 # 定义一个名为 "Embeddings" 的类，该类继承自 "torch.nn.Module"。
 # 在 PyTorch 中，自定义的神经网络模块需要继承自 "torch.nn.Module"。
 class Embeddings(torch.nn.Module):
-    # 初始化方法，当创建 "Embeddings" 类的新实例时会被调用。
+    # d_model
+    # vocab: 词汇表的大小
     def __init__(self, d_model, vocab):
         # 调用父类 "torch.nn.Module" 的初始化方法。这是必需的，以确保实例可以正确地注册子模块等。
         super(Embeddings, self).__init__()
@@ -103,12 +104,11 @@ class Embeddings(torch.nn.Module):
         self.d_model = d_model
 
         # 定义前向传播的方法。当对输入数据进行计算时，这个方法会被调用。
-
     def forward(self, x):
         return self.lut(x) * math.sqrt(self.d_model)  # 对输入的整数序列进行前向传播，得到嵌入向量序列
 
 
-# 词嵌入微度是512维
+# 词嵌入维度是512维
 d_model = 512
 # 词表大小是1000
 vocab = 1000
