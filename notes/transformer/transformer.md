@@ -70,7 +70,7 @@ tensor([4, 3])
 
 第一个输出是一个4x3的张量，其中每个元素都是一个3维向量。第二个输出是嵌入层的大小，它是一个2维张量，表示嵌入层的维度。
 
-对于一个M×N的输入, 所有的元素都在0-num_embeddings-1范围内, 进行nn.Embedding(num_embeddings, embedding_dim)
+对于一个M×N的输入, 输入的所有 所有的元素都在0-num_embeddings-1范围内, 进行nn.Embedding(num_embeddings, embedding_dim)
 
 embeddings类
 
