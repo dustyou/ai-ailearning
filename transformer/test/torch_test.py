@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 
-# 01
 # randn
 x = torch.randn(4,4)
 print(x.size())
@@ -13,7 +12,7 @@ print(a.size(), a)
 # transpose
 b = a.transpose(1,2)
 print(b.size(), b)
-# transpose和view
+# transpose 和 view
 c = a.view(1,3,2,4)
 print(c.size(), c)
 
