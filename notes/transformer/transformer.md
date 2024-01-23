@@ -6,7 +6,7 @@
 
 代码链接:  [embedding_test.py](..\..\transformer\test\embedding_test.py) 
 
-###  embedding(词嵌入)
+###  embedding(词嵌入) 3.2.2-4.2.2
 
 Embedding是一种将离散数据映射到连续向量空间中的技术，主要用于深度学习模型中。通过将离散数据映射到连续向量空间，可以使模型更好地处理这些数据，并提高模型的性能和准确性。
 
@@ -492,15 +492,127 @@ class MultiHeadedAttention(nn.Module):  # 定义一个名为MultiHeadedAttention
 
 
 
-## 自定义PositionalEncoding
-
- [positional_encoding.py](..\..\transformer\test\positional_encoding.py) 
+## PositionalEncoding 5.2.2-6.2.2
 
 
 
-## 绘制词向量特征分布曲线
+位置编码器
+
+因为在ransformer的编码器结构中，并没有针对词汇位置信息的处理，因此需要在 Embedding层后加入位置编码器，将词汇位置不同可能会产生不同语义的信息加入到词嵌入张量中，以弥补位置信息的缺失
+
+ [positional_encoding.py](..\..\transformer\positional_encoding.py) 
+
+```python
+class PositionalEncoding(nn.Module):
+    def __init__(self, embedding_dim, dropout, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.embedding_dim = embedding_dim
+        self.max_len = max_len
+        self.dropout = nn.Dropout(p=dropout)
+        
+        pe = torch.zeros(max_len, embedding_dim)
+        # 绝对位置矩阵初始化之后，接下来就是考虑如何将这些位置信息加入到位置编码矩阵中，最简单思路就是先将ma×_len×1
+        # 的绝对位置矩阵，变换成max_len×d_model形状，然后覆盖原来的初始位置编码矩阵即可
+        # 要做这种矩阵变换，就需要一个1xd_model形状的变换矩阵div_term, 我们对这个变换矩阵的要求除了形状外
+        # 还希望它能够将自然数的绝对位置编码缩放成足够小的数字，有助于在之后的梯度下降过程中更快的收敛, 这样我们就可以开始初始化
+        # 首先使用arange获得一个自然数矩阵，但是细心的同学们会发现，我们这里并没有按照预计的一而是有了一个跳跃，只初始化了一半即1xd_mode1 / 2的矩阵。为什么是一半呢，其实这里并不是
+        # 我们可以把它看作是初始化了两次，而每次初始化的变换矩阵会做不同的处理，第一次初始化的变护并把这两个矩阵分别填充在位置编码矩阵的偶数和奇数位置上，组成最终的位置编码矩阵
+        position = torch.arange(0, max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, embedding_dim, 2) * -(math.log(10000.0) / embedding_dim))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+        
+    def forward(self, x):
+        x = x + Variable(self.pe[:, :x.size(1)], requires_grad=False)
+        return self.dropout(x)
+
+
+# x = res
+dropout = 0.1
+max_len = 60
+# pe = PositionalEncoding(d_model, dropout, max_len)
+# pe_result = pe(x)
+# print(pe_result)
+# print(pe_result.shape)
+```
+
+
+
+这段代码定义了一个名为`PositionalEncoding`的PyTorch模块，它用于给输入的序列添加位置编码。位置编码是一种在Transformer模型中使用的技术，用于捕获序列中元素的位置信息。
+
+以下是代码的详细解释：
+
+1. **初始化函数 (`__init__`)**:
+
+
+* `embedding_dim`: 嵌入的维度。
+* `dropout`: dropout的比率。
+* `max_len`: 序列的最大长度。
+* `pe`: 用于存储计算出的位置编码的张量。
+* `position`: 生成一个从0到`max_len-1`的张量，并为其增加一个维度。
+* `div_term`: 用于控制正弦和余弦函数的频率。
+* 通过正弦和余弦函数计算位置编码，并将其存储在`pe`中。最后，将`pe`添加为一个模块的不可训练的缓冲区。
+2. **前向传播函数 (`forward`)**:
+
+
+* `x`: 输入的序列。
+* 通过将输入`x`与`pe`相加，为其添加位置编码。
+* 应用dropout层。
+* 返回经过位置编码和dropout处理的序列。
+
+在Transformer模型中，这种位置编码技术使得模型能够理解输入序列中元素的位置信息，这对于一些需要理解序列中元素顺序的任务（如机器翻译）是非常重要的。
+
+
+
+在人工智能（AI）领域，特别是在自然语言处理（NLP）和机器学习中，位置编码（Positional Encoding）是一种重要的技术，尤其在处理序列数据时。位置编码的主要目的是为了让模型能够理解序列中元素的位置信息，因为许多模型（如Transformer）由于其固有的结构特性，在处理输入序列时会丢失位置信息。
+
+在自然语言处理任务中，如机器翻译或文本生成，单词的顺序和位置对理解句子的含义至关重要。例如，“我爱你”和“你爱我”虽然包含相同的单词，但由于单词顺序的不同，它们的意思完全不同。
+
+在Transformer模型中，位置编码通常是通过向输入嵌入（Input Embeddings）添加额外的位置嵌入（Positional Embeddings）来实现的。这些位置嵌入通常是固定大小的向量，它们被添加到相应的输入嵌入中，以便模型能够区分不同位置的单词。
+
+位置编码可以通过多种方式实现，但最常见的方法之一是使用正弦和余弦函数。在这种方法中，每个位置都被赋予一个独特的向量，该向量由一系列正弦和余弦波的值组成。这些波的频率和相位是根据位置在序列中的索引来计算的。通过这种方式，模型能够捕获到单词之间的相对位置信息，而不仅仅是它们的绝对位置。
+
+总的来说，位置编码在AI领域的作用是帮助模型理解输入序列中元素的位置信息，从而提高其在各种NLP任务中的性能。
+
+## 绘制词向量特征分布曲线 7.2.2
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from torch.autograd import Variable
+
+from transformer.positional_encoding import PositionalEncoding
+#创建一张15×5大小的画布
+plt.figure(figsize=(15,5))
+#实例化PositionalEncoding类得到pe对象，输入参数是2g和g
+pe = PositionalEncoding(20,0.05)
+# 然后向pe传入被Variable封装的tensor,这样pe会直接执行forward函数，
+# 且这个tensor里的数值都是0，被处理后相当于位置编码张量
+y = pe(Variable(torch.zeros(1,100,20)))
+plt.plot(np.arange(100), y[0, :, 4:8].data.numpy())
+#然后定义画布的横纵坐标，横坐标到100的长度，纵坐标是某一个词汇中的某维特征在不同长度下对应的值
+# 因为总共有20维之多，我们这里只查看4,5,6,7维的值.
+plt.legend(["dim %d"% p for p in [4,5,6,7]])
+plt.show()
+
+```
 
  [pe_test.py](..\..\transformer\test\pe_test.py) 
+
+![image-20240123235947176](image/image-20240123235947176.png)
+
+输出效果分析：
+
+每条颜色的曲线代表某一个词汇中的特征在不同位置的含义.
+
+保证同一词汇随着所在位置不同它对应位置嵌入向量会发生变化.
+
+正弦波和余弦波的值域范围都是1到-1这又很好的控制了嵌入数值的大小，有助于梯度的快速计算.
+
+
 
 ### 小结
 
@@ -529,7 +641,7 @@ class MultiHeadedAttention(nn.Module):  # 定义一个名为MultiHeadedAttention
 
 
 
-## 编码器部分实现
+# 2.3 编码器部分实现
 
 P9 9.2.3.1
 
@@ -539,7 +651,11 @@ P9 9.2.3.1
     -   第一个子层连接结构包括一个多头自注意力子层和规范化层以及一个残差连接
     -   第二个子层连接结构包括一个前馈全连接子层和规范化层以及一个残差连援
 
-2.3.1掩码张量
+
+
+
+## 2.3.1 掩码张量
+
 ·了解什么是掩码张量以及它的作用
 ,掌生成码张量的实现过程
 ·什么是掩码张量：
@@ -555,11 +671,9 @@ P9 9.2.3.1
 
 
 
-# 2.3.1 掩码张量
+### 基础方法介绍
 
-## 基础方法介绍
-
-### np.triu
+#### np.triu
 
  [mask.py](..\..\transformer\test\mask.py) 
 
@@ -650,7 +764,7 @@ plt.show()
 ·它的输出是一个最后两维形成1方阵的下三角阵
 ·最后对生成的掩码张量进行了可视化分析，更深一步理解了它的用途
 
-# 2.3.2注意力机制
+## 2.3.2注意力机制
 
 ·学习目标
 ·了解什么是注意力计算规则和注意力机制
@@ -834,3 +948,51 @@ mask用于掩码
 dropout用于随机置0.
 
 它的输出有两个，quey的注意力表示以及注意力张量
+
+
+
+## 2.3.3 多头注意力机制
+
+
+
+## 2.3.4 前馈全连接层
+
+
+
+## 2.3.5 规范化层
+
+
+
+## 2.3.6 子层连接结构
+
+
+
+## 2.3.7 编码器层
+
+
+
+## 2.3.8 编码器
+
+
+
+# 2.4 解码器部分实现
+
+
+
+## 2.4.1 解码器层
+
+
+
+## 2.4.2 解码器
+
+
+
+# 2.5 输出部分实现
+
+
+
+# 2.6 模型构建
+
+
+
+# 2.7 模型基本测试运行

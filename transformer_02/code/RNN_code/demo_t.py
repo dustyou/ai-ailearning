@@ -47,16 +47,17 @@ class PositionalEncoding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
         
         pe = torch.zeros(max_len, embedding_dim)
-        
+        # 绝对位置矩阵初始化之后，接下来就是考虑如何将这些位置信息加入到位置编码矩阵中，最简单思路就是先将ma×_len×1
+        # 的绝对位置矩阵，变换成max_len×d_model形状，然后覆盖原来的初始位置编码矩阵即可
+        # 要做这种矩阵变换，就需要一个1xd_model形状的变换矩阵div_term, 我们对这个变换矩阵的要求除了形状外
+        # 还希望它能够将自然数的绝对位置编码缩放成足够小的数字，有助于在之后的梯度下降过程中更快的收敛, 这样我们就可以开始初始化
+        # 首先使用arange获得一个自然数矩阵，但是细心的同学们会发现，我们这里并没有按照预计的一而是有了一个跳跃，只初始化了一半即1xd_mode1 / 2的矩阵。为什么是一半呢，其实这里并不是
+        # 我们可以把它看作是初始化了两次，而每次初始化的变换矩阵会做不同的处理，第一次初始化的变护并把这两个矩阵分别填充在位置编码矩阵的偶数和奇数位置上，组成最终的位置编码矩阵
         position = torch.arange(0, max_len).unsqueeze(1)
-        
         div_term = torch.exp(torch.arange(0, embedding_dim, 2) * -(math.log(10000.0) / embedding_dim))
-        
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        
         pe = pe.unsqueeze(0)
-        
         self.register_buffer('pe', pe)
         
     def forward(self, x):
