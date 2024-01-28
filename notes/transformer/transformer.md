@@ -879,37 +879,37 @@ print(p_attn.shape)
 1. **导入库**:
 
 
-	* `torch` 和 `math`：这是Python的内置库，用于数学运算。
-	* `torch.nn.functional`：提供了许多神经网络操作。
-	* `torch.autograd.Variable`：用于自动微分。但在较新版本的PyTorch中，直接使用Tensor即可，因此这部分可能是过时的。
-	* `transformer.positional_encoding` 中的 `pe_result`：这似乎是一个位置编码的结果，但代码中没有给出具体实现。
+    * `torch` 和 `math`：这是Python的内置库，用于数学运算。
+    * `torch.nn.functional`：提供了许多神经网络操作。
+    * `torch.autograd.Variable`：用于自动微分。但在较新版本的PyTorch中，直接使用Tensor即可，因此这部分可能是过时的。
+    * `transformer.positional_encoding` 中的 `pe_result`：这似乎是一个位置编码的结果，但代码中没有给出具体实现。
 2. **attention函数**:
 
 
-	* **输入参数**:
-		+ `query`: 查询向量。
-		+ `key`: 键向量。
-		+ `value`: 值向量。
-		+ `mask`: 一个掩码，用于指示哪些位置是有效的、哪些位置应该被忽略。
-		+ `dropout`: 一个dropout层，用于防止过拟合。
-	* **功能**:
-		+ 首先，计算查询和键之间的分数，分数是通过矩阵乘法得到的，然后通过缩放（`/ math.sqrt(d_k)`）进行归一化。
-		+ 如果提供了掩码，则将分数中掩码为0的位置设置为非常小的值（-1e9）。
-		+ 使用softmax函数对分数进行归一化，得到注意力权重。
-		+ 如果提供了dropout层，则应用dropout。
-	* **输出**:
-		+ 输出的第一个值是加权的值向量。
-		+ 输出的第二个值是注意力权重。
+    * **输入参数**:
+        + `query`: 查询向量。
+        + `key`: 键向量。
+        + `value`: 值向量。
+        + `mask`: 一个掩码，用于指示哪些位置是有效的、哪些位置应该被忽略。
+        + `dropout`: 一个dropout层，用于防止过拟合。
+    * **功能**:
+        + 首先，计算查询和键之间的分数，分数是通过矩阵乘法得到的，然后通过缩放（`/ math.sqrt(d_k)`）进行归一化。
+        + 如果提供了掩码，则将分数中掩码为0的位置设置为非常小的值（-1e9）。
+        + 使用softmax函数对分数进行归一化，得到注意力权重。
+        + 如果提供了dropout层，则应用dropout。
+    * **输出**:
+        + 输出的第一个值是加权的值向量。
+        + 输出的第二个值是注意力权重。
 3. **使用attention函数**:
 
 
-	* 初始化`query`, `key`, 和 `value` 为 `pe_result`。
-	* 调用attention函数并打印输出。
+    * 初始化`query`, `key`, 和 `value` 为 `pe_result`。
+    * 调用attention函数并打印输出。
 4. **掩码的使用**:
 
 
-	* 创建一个2x4x4的零张量作为掩码。
-	* 使用这个掩码再次调用attention函数并打印输出。
+    * 创建一个2x4x4的零张量作为掩码。
+    * 使用这个掩码再次调用attention函数并打印输出。
 
 总结：这段代码展示了如何使用多头注意力机制的基本版本。通过这个机制，模型可以聚焦于输入中的不同部分来生成输出。
 
@@ -971,13 +971,27 @@ dropout用于随机置0.
 
 ·这种结构设计能让每个注意力机制去优化每个词汇的不同特征部分，从而均衡同一种注意力机制可能产生的偏差，让词义拥有来自更多元的表达，实验表可以从而提升模型效果
 
+
+
+### 基本方法
+
+#### contiguous
+
+让 transpose之后的张量可以执行view方法
+
+```python
+xx.transpose(1,2).contiguous().view(batch_size,-1,self.head self.d_k)
+```
+
+
+
 ### 代码讲解
 
 ```python
 #我们使用一个类来实现多头注意力机制的处理
 class MultiHeadedAttention(nn.Module):
-	def __init__(self,Thead,embedding_dim,dropout=0.1):
-        '''在类的初始化时，会传入三个参数，head代表头数，embedding._dim代表词嵌入的维度，	dropout代表进行dropout操作时置0比率，默认是0.1.'''
+    def __init__(self,Thead,embedding_dim,dropout=0.1):
+        '''在类的初始化时，会传入三个参数，head代表头数，embedding._dim代表词嵌入的维度，    dropout代表进行dropout操作时置0比率，默认是0.1.'''
         super(MultiHeadedAttention,self).__init__()
         #在函数中，首先使用了一个测试中常用的assert语句，判断h是否能被d_model整除，
         #这是因为我们之后要给每个头分配等量的词特征.也就是embedding_dim/head个.
@@ -993,7 +1007,7 @@ class MultiHeadedAttention(nn.Module):
         self.attn = None
         #最后就是一个self.dropout对象，它通过nn中的Dropout实例化而来，置0比率为传进来的参数d
         self.dropout = nn.Dropout(p=dropout)
-	def forward(self,query,key,value,mask=None):
+    def forward(self,query,key,value,mask=None):
         '''前向逻辑函数，它的输入参数有四个，前三个就是注意力机制需要的Q,K,V,
         最后一个是注意力机制中可能需要的mask掩码张量，默认是None,'''
         #如果存在掩码张量mask
@@ -1010,50 +1024,475 @@ class MultiHeadedAttention(nn.Module):
         #为了让代表句子长度维度和词向量维度能够相邻，这样注意力机制才能找到词义与句子位置的关系，
         #从attention函数中可以看到，利用的是原始输入的倒数第一和第二维.这样我们就得到了每个头的
         query,key,value =\
-        	[model(x).view(batch_size,-1,self.head,self.d_k).transpose(1,2)
-        	for model,x in zip(self.linears,(query,key,value))]
+        [model(x).view(batch_size,-1,self.head,self.d_k).transpose(1,2)
+            for model,x in zip(self.linears,(query,key,value))]
 
         #得到每个头的输入后，接下来就是将他们传入到attention中，
         #这里直接调用我们之前实现的attention函数.同时也将mask和dropout传入其中.
-		x,self.attn = attention(query,key,value,mask=mask,dropout=self.dropout
+        x,self.attn = attention(query,key,value,mask=mask,dropout=self.dropout
         #通过多头注意力计算后，我们就得到了每个头计算结果组成的4维张量，我们需要将其转换为输入的
         #因此这里开始进行第一步处理环节的逆操作，先对第二和第三维进行转置，然后使用cont1 guous方
         #这个方法的作用就是能够让转置后的张量应用v1w方法，否则将无法直接使用，
         #乐以下一生部是使甲w香组形，交成和岭入形担月
-		xx.transpose(1,2).contiguous().view(batch_size,-1,self.head self.d_
+        xx.transpose(1,2).contiguous().view(batch_size,-1,self.head self.d_k)
         #最后使用线性层列表中的最后一个线性层对输入进行线性变换得到最终的多头注意力结构的输出，
-		return self.linears[-1](x)
+        return self.linears[-1](x)
 ```
 
 
 
-## 2.3.4 前馈全连接层111222
+### 2.3.3 多头注意力机制总结
+
+·学习了什么是多头注意力机制明
+·每个头开始从词义层面分割输出的张量，也就是每个头都想获得一组Q,K,V进行注
+意力机制的计算，但是句子中的每个词的表示只获得一部分，也就是只分剂了最后一
+维的词嵌入向量.这就是所谓的多头，将每个头的获得的输入送到注意力机制中，就形成
+类多头注意力机制，
+·学习了多头注意力机制的作用：
+·这种结构设计能让每个注意力机制去优化每个词汇的不同特部分，从而均衡同一种
+注意力机制可能产生的偏差，让词义拥有来自更多元的表达，实验表明可以从而提升
+模型效果
+·学习并实现了多头注意力机割的类：MultiHeadedAttention
+·因为多头注意力机制中需要使用多个相同的线性层，首先实现了克隆函数clones.
+clones函数的输入是nodule,N,分别代表克隆的目标层，和克隆个数
+·clones函数的输出是装有N个克隆层的Module列表
+·接着实现MultiHeadedAttention类，它的初始化函数输入是h,d_model,dropout分别代
+表头数，词嵌入维度和置零比率
+·它的实例化对象输入是Q,K,V以及掩码张量mask
+·它的实例化对象输出是通过多头注意力机制处理的Q的注意力表示
+
+## 2.3.4 前馈全连接层
+
+·学习目标
+·了解什么是前馈全连接层及其它的作用
+掌握前馈全连接层的实现过程
+。什么是前馈全连接层：
+·在Transformert中前馈全连接层就是具有两层线性层的全连接网络
+。前馈全连接层的作用：
+·考虑注意力机制可能对复杂过程的拟合程度不够，通过增加两层网络来增强模型的能力
 
 
+
+### 代码分析
+
+```python
+#通过类PositionwiseFeedForward来实现前馈全连接层
+class PositionwiseFeedForward(nn.Module):
+    def __init__(self,d_model,d_ff,dropout=0.1):
+        '''初始化函数有三个输入参数分别是d_model,d_ff,和dropout=0.1,第一个是线性层的输入维度也是第二个线性层的输出维度，
+        因为我们希望输入通过前馈全连接层后输入和输出的维度不变.第二个参数d_ff就是第二个线性层的输入维度和第一个线性层的输出
+        最后一个是dropout:置0比率.'''
+        super(PositionwiseFeedForward,self).__init__()
+        #首先按照我们预期使用nn实例化了两个线性层对象，se1f.w1和se1f.w2
+        #它们的参数分别是d_model,d_ff和d_ff,d_model1
+        self.w1 = nn.Linear(d_model,d_ff)
+        self.w2 = nn.Linear(d_ff,d_model)
+        #然后使用nn的Dropout实例化了对象self.dropout
+        self.dropout = nn.Dropout(dropout)
+    def forward(self,x):
+    '''输入参数为X,代表来自上一层的输出'''
+    #首先经过第一个线性层，然后使用Funtional中relu函数进行激活
+    #之后再使用dropout:进行随机置0，最后通过第二个线性层w2,返回最终结果.
+        return self.w2(self.dropout(F.relu(self.w1(x))))
+```
+
+
+
+ReLU函数公式：ReLU(x)=max(O,x)
+
+### 2.3.4 前馈全连接层总结：
+
+·学习了什么是前馈全连接层：
+·在Transformer中前馈全连接层就是具有两层线性层的全连接网络.
+学习了前馈全连接层的作用：
+·考虑注意力机制可能对复杂过程的拟合程度不够，通过增加两层网络来增强模型的能力
+学习并实现了前馈全连接层的类：PositionwiseFeedForward
+它的实例化参数为d_model,,d_ff,dropout,,分别代表词嵌入维度，线性变换维度，和置零比率
+·它的输入参数x,表示上层的输出
+·它的输出是经过2层线性网络变换的特征表示
 
 ## 2.3.5 规范化层
+
+学习目标
+·了解规范化层的作用
+·掌握规范化层的实现过程
+
+规范化层的作用：
+·它是所有深层网络模型都需要的标准网络层，因为随着网络层数的增加，通过多层的计算后参数可能开始出现过大或过小的情况，这样可能会导致学习过程出现异常，模型可能收敛非常的慢.因此都会在一定层数后接规范化层进行数值的规范化，使其特征数值在合理范围内.
+
+
+
+### 代码讲解
+
+```python
+#通过LayerNorm:实现规范化层的类
+class LayerNorm(nn.Module):
+    def __init__(self,ffeatures,eps=1e-6):
+        """初始化函数有两个参数，一个是features,表示词嵌入的维度，
+        另一个是eps它是一个足够小的数，在规范化公式的分母中出现，
+        防止分母为0.默认是1e-6."""
+        super(LayerNorm,self).__init__()
+        #根据features的形状初始化两个参数张量a2,和b2,第一个初始化为1张量，
+        #也就是里面的元素都是1，第二个初始化为张量，也就是里面的元素都是0，这两个张量就是规范化层的参数，     
+        #因为直接对上一层得到的结果做规范化公式计算，将改变结果的正常表征，因此就需要有参数作为调节因子
+        #使其即能满足规范化要求，又能不改变针对目标的表征.最后使用nn.parameter封装，代表他们是模型的参数。
+        self.a2 = nn.Parameter(torch.ones(features))
+        self.b2 = nn.Parameter(torch.zeros(features))
+        #把eps传到类中
+        self.eps = eps
+    def forward(self,x):
+        "”“输入参数x代表来自上一层的输出"
+        #在函数中，首先对输入变量x求其最后一个维度的均值，并保持输出维度与输入维度一致.
+        #接着再求最后一个维度的标准差，然后就是根据规范化公式，用x减去均值除以标准差获得规范化的结果
+        #最后对结果乘以我们的缩放参数，即2，*号代表同型点乘，即对应位置进行乘法操作，加上位移参数b2.返回即可
+        mean = x.mean(-1,keepdim=True)
+        std = x.std(-1,keepdim=True)
+        return self.a2 * (x - mean)/(std + self.eps)+self.b2
+```
+
+
+
+### 2.3.5 规范化层总结：
+
+·学习了规范化层的作用：
+·它是所有深层网络模型都需要的标准网络层，因为随着网络层数的增加，通过多层的计算后参数可能开始出现过大或过小的情况，这样可能会导致学习过程出现异常，模型可能收敛非常的慢.因此都会在一定层数后接规范化层进行数值的规范化，使其特征数值在合理范围内，
+·学习并实现了规范化层的类：LayerNorm
+它的实例化参数有两个，features和eps,分别表示词嵌入特征大小，和一个足够小的数.
+·它的输入参数x代表来自上一层的输出
+·它的输出就是经过规范化的特征表示.
 
 
 
 ## 2.3.6 子层连接结构
 
+学习目标：
+·了解什么是子层连接结构：
+掌握好层连接结构的实现过程，
+·什么是子层连接结构：
+如图所示，输入到每个子层以及规范化层的过程中，还使用了残差链接（跳跃连接），因此我们把这一部分结构整体叫做子层连接（代表子层及其链接结构），在每个编码器层中，都有两个子层，这两个子层加上周围的链接结构就形成了两个子层连接结构，
+·子层连接结构图：
 
+![image-20240128223758468](image/image-20240128223758468.png)
+
+### 代码讲解
+
+```python
+#使用SublayerConnection来实现子层连接结构的类
+class SublayerConnection(nn.Module):
+    def __init__(self,size,dropout=0.1):
+        '''
+        它输入参数有两个，size以及dropout,s1ze一般是都是词嵌入维度的大小，
+        dropout本身是对模型结构中的节点数进行随机抑制的比率，
+        又因为节点被抑制等效就是该节点的输出都是0，因此也可以把dropout看作是对输出矩阵的随
+        '''
+        super(SublayerConnection,self).__init__()
+        #实例化了规范化对象se1f.norm
+        self.norm = LayerNorm(size)
+        #又使用nn中预定义的droupout实例化一个self.dropout对象.
+        self.dropout = nn.Dropout(p=dropout)
+    def forward(self,x,sublayer):
+    """前向逻辑函数中，接收上一个层或者子层的输入作为第一个参数，
+    将该子层连接中的子层函数作为第二个参数"""
+    #我们首先对输出进行规范化，然后将结果传给子层处理，之后再对子层进行dropout操作，
+    #随机停止一些网络中神经元的作用，来防止过拟合，最后还有一个add操作，
+    #因为存在跳跃连接，所以是将输入X与d「opout后的子层输出结果相加作为最终的子层连接输出，
+        return x self.dropout(sublayer(self.norm(x)))
+```
+
+
+实例化参数
+
+```python
+size= 512
+dropout =0.2
+head =8
+d_model= 512
+#输入参数：
+
+#令×为位置编码器的输出
+
+x = pe_result
+mask = Variable(torch.zeros(8,4,4))
+
+#假设子层中装的是多头注意力层，实例化这个类
+self_attn = MultiHeadedAttention(head,d_model)
+
+#使用lambda获得一个函数类型的子层
+sublayer = lambda x:self_attn(x,x,x,mask)
+
+#调用：
+sc SubLayerConnection(size,dropout]
+sc_result sc(x,sublayer]
+print(sc_result]
+```
+
+### 2.3.6子层连接结构总结：
+
+什么是好层连接结构：
+·如图所示，输入到每个子层以及规范化层的过程中，还使用了残差链接（跳跃连接)，因此我们把这一部分结构整体叫做子层连接（代表子层及其链接结构），在每个编码器层中，都有两个子层，这两个子层加上周围的链接结构就形成了两个子层连接结构.
+·学习并实现了子层连接结构的类：SublayerConnection
+
+类的初始化函数输入参数是size,dropout,分别代表词嵌入大小和置零比率
+·它的实例化对象输入参数是x,sublayer,分别代表上一层输出以及子层的函数表示
+·它的输出就是通过子层连接结构处理的输出
 
 ## 2.3.7 编码器层
+
+·学习目标
+·了解编码器层的作用
+·掌握编码器层的实现过程
+编码器层的作用：
+·作为编码器的组成单元，每个编码器层完成一次对输入的特征提取过程，即编码过程
+·编码器层的构成图：
+
+![image-20240128225533636](image/image-20240128225533636.png)
+
+
+
+
+
+### 代码讲解
+
+```python
+#使用EncoderLayer类实现编码器层
+class EncoderLayer(nn.Module):
+    def __isit_(self,size,self_attn,feed_forward,dropout):
+        '''它的初始化函数参数有四个，分别是s1ze,其实就是我们词嵌入维度的大小，它也将作为我们编码
+        第二个self_attn,之后我们将传入多头自注意力子层实例化对象，并且是自注意力机制，
+        第三个是feed_froward,之后我们将传入前馈全连接层实例化对象，最后一个是置O比率dropout
+        '''
+        super(EncoderLayer,self).__init__()
+        #首先将self_attn和feed_forward传入其中.
+        self.self_attn self_attn
+        self.feed_forward feed_forward
+        #如图所示，编码器层中有两个子层连接结构，所以使用c1ones函数进行克隆
+        self.sublayer = clones(SublayerConnection(size,dropout),2)
+        #把size传入其中
+        self.size size
+    def forward(self,x,mask):
+        """forward函数中有两个输入参数，x和mask,分别代表上一层的输出，和掩码张量mask."""
+        #里面就是按照结构图左侧的流程.首先通过第一个子层连接结构，其中包含多头自注意力子层，
+        #然后通过第二个子层连接结构，其中包含前馈全连接子层.最后返回结果.
+        ×=self.sublayer[g](x,lambda x:self.self_attn(x,×,×,mask))
+        return self.sublayer[1](x,self.feed_forward)
+```
+
+
+
+调用
+
+```python
+#实例化参数：
+size = 512
+head = 8
+d_model = 512
+d_ff = 64
+x = pe_result
+dropout = 0.2
+self_attn = MultiHeadedAttention(head,d_model)
+ff = PositionwiseFeedForward(d_model,d_ff,dropout)
+mask = Variable(torch.zeros(8,4,4))
+# 调用：
+el = EncoderLayer(size,self_attn,ff,dropout)
+el_result = el(x,mask)
+print(el_result)
+print(el_result.shape)
+```
+
+
+
+### 2.3.7 编码器层总结
+
+·学习了编码器层的作用：
+·作为编码器的组成单元，每个编码器层完成一次对输入的特征提取过程，即编码过程
+学习并实现了编码器层的类：EncoderLayer
+·类的初始化函数共有4个，分别是siz,其实就是我们词嵌入维度的大小.第二个self_attn,之后我们将传入多头自注意力子层实例化对象，并且是自注意力机制.第三个是feed_froward,之后我们将传入前馈全连接层实例化对象.最后一个是置0比率dropout.
+·实例化对象的输入参数有2个，x代表来自上一层的输出，mask代表掩码张量
+·它的输出代表经过整个编码层的特征表示
 
 
 
 ## 2.3.8 编码器
 
+·学习目标
+·了解编码器的作用
+·掌握编码器的实现过程
+·编码器的作用：
+·编码器用于对输入进行指定的特征提取过程，也称为编码，由N个编码器层堆壁而成
+·编码器的结构图：
 
+![image-20240128231708542](image/image-20240128231708542.png)
+
+
+
+
+
+### 代码讲解
+
+```python
+#使用Encoder类来实现编码器
+class Encoder(nn.Module):
+    def __init__(self,layer,N):
+        '''初始化函数的两个参数分别代表编码器层和编码器层的个数'''
+        super(Encoder,self).__init__()
+        #首先使用clones函数克隆N个编码器层放在se1f.1 ayers中
+        self.layers clones(layer,N)
+        #再初始化一个规范化层，它将用在编码器的最后面·
+        self.norm LayerNormilayer.size)
+    def forward(self,x,mask):
+        '''forwardi函数的输入和编码器层相同，x代表上一层的输出，mask代表掩码张量'''
+        #首先就是对我们克隆的编码器层进行循环，每次都会得到一个新的x,
+        #这个循环的过程，就相当于输出的x经过了N个编码器层的处理.
+        #最后再通过规范化层的对象self.norm进行处理，最后返回结果.
+        for layer in self.layers:
+            x = layer(x,mask)
+        return self.norm(x)
+```
+
+
+
+调用
+
+```python
+#实例化参数：
+#第一个实例化参数1yer,它是一个编码器层的实例化对象，因此需要传入编码器层的参数
+#又因为编码器层中的子层是不共享的，因此需要使用深度拷贝各个对象.
+s1ze=512
+head =8
+d_model 512
+d_ff = 64
+c = copy.deepcopy
+attn = MultiHeadedAttention(head,d_model)
+ff = PositionwiseFeedForward(d_model,d_ff,dropout)
+dropout = 0.2
+layer = EncoderLayer(size,c(attn),c(ff),dropout)
+#编码器中编码器层的个数N
+N=8
+mask = Variable(torch.zeros(8,4,4))
+
+#调用：
+en = Encoder(layer,N)
+en_result = en(x,mask)
+print(entresult)
+print(en_result.shape)
+```
+
+2.3.8编码器总结：
+·学习了编码器的作用：
+编码器用于对输入进行指定的特征提取过程，也称为编码，由N个编码器层堆叠而成，
+学习并实现了编码器的类：Encoder
+·类的初始化函数参数有两个，分别是Iayer和N,代表编码器层和编码器层的个数，
+·forward函数的输入参数也有两个，和编码器层的forward相同，代表上一层的输出，mask代表掩码张量，
+·编码器类的输出就是Transformer中编码器的特征提取表示，它将成为解码器的输入的一部分.
 
 
 
 # 2.4 解码器部分实现
 
+学习目标：
+·了解解码器中各个组成部分的作用.
+·掌握解码器中各个组成部分的实现过程
+·解码器部分：
+·由N个解码器层堆叠而成
+·每个解码器层由三个子层连接结构组成
+·第一个子层连接结构包括一个多头自注意力子层和规范化层以及一个残差连接
+·第二个子层连接结构包括一个多头注意力子层和规范化层以及一个残差连接
+·第三个子层连接结构包括一个前馈全连接子层和规范化层以及一个残差连接
+
+![image-20240128234951569](image/image-20240128234951569.png)
+
+
+
+说明：
+·解码器层中的各个部分，如，多头注意力机制，规范化层，前馈全连接网络，子层连接结构都与编码器中的实现相同.因此这里可以直接拿来构建解码器层.
+
+
+
 
 
 ## 2.4.1 解码器层
+
+学习目标：
+了解解码器层的作
+·掌握解码器层的实现过程
+解码器层的作用：
+·作为解码器的组成单元，每个解码器层根据给定的输入向目标方向进行特征提取操作，即解码过程
+
+
+
+### 代码讲解
+
+```python
+#使用DecoderLayer的类实现解码器层
+
+class DecoderLayer(nn.Module):
+    def __init__(self,size,self_attn,src_attn,feed_forward,dropout):
+        '''初始化函数的参数有币个，分别是s1z,代表词嵌入的维度大小，同时也代表解码器层的尺寸，
+        第二个是self_attn,多头自注意力对象，也就是说这个注意力机制需要Q=K=V,
+        第三个是src_attn,多头注意力对象，这里Q!=K=V,第四个是前馈全连接层对象，最后就是d
+        '''
+        super(DecoderLayer,self).__init__()
+        #在初始化函数中，
+        主要就是将这些输入传到类中
+        self.size = size
+        self.self_attn = self_attn
+        self.src_attn = src_attn
+        self.feed_forward = feed_forward
+        #按照结构图使用clones函数克隆三个子层连接对象.
+        self.sublayer = clones(SublayerConnection(size,dropout),3)
+        
+    def forward(self,x,memory,source_mask,target_mask):
+        '''forwardi函数中的参数有4个，分别是来自上一层的输入x,
+        来自编码器层的语义存储变量me rmory,以及源数据掩码张量和目标数据掩码张量.
+        '''
+        #将memory表示成m方便之后使用
+        m = memory
+        #将x传入第一个子层结构，第一个子层结构的输入分别是x和self-attn函数，因为是自注意力机制，所以Q,K,V都是X,
+        #最后一个参数是目标数据掩码张量，这时要对目标数据进行遮掩，因为此时模型可能还没有生成任何目标数据，
+        #比如在解码器准备生成第一个字符或词汇时，我们其实已经传入了第一个字符以便计算损失，
+        #但是我们不希望在生成第一个字符时模型能利用这个信息，因此我们会将其遮掩，同样生成第二个字符或词汇时，
+        #模型只能使用第一个字符或词汇信息，第二个字符以及之后的信息都不允许被模型使用.
+        x = self.sublayer[0](x,lambda x:self.self_attn(x,x,x,target_mask))
+        #接着进入第二个子层，这个子层中常规的注意力机制，q是输入X;k,V是编码层输出memo ry,
+        #同样也传入source_mask,但是进行源数据遮掩的原因并非是抑制信息泄漏，而是遮蔽掉对结果没有意义的字符通产生的注意力值，
+        #以此提升模型效果和训练速度.这样就完成了第二个子层的处理.
+        x = self.sublayer[1](x,lambda x:self.src_attn(x,m,m,source_mask))
+        #最后一个子层就是前馈全连接子层，经过它的处理后就可以返回结果.这就是我们的解码器层结构.
+        return self.sublayer[2](x,self.feed_forward)
+
+```
+
+
+
+调用
+
+```python
+#实例化参数：
+#类的实例化参数与解码器层类似，相比多出了src_attn,但是和se1f_attn是同一个类.
+head =8
+size = 512
+d_model = 512
+d_ff = 64
+dropout = 0.2
+self_attn = src_attn MultiHeadedAttention(head,d_model,dropout)
+#前馈全连接层也和之前相同
+ff = PositionalwiseFeedForward(d_model,d_ff,dropout)
+
+#输入参数：
+#x是来自目标数据的词嵌入表示，但形式和源数据的词嵌入表示相同，这里使用per充当.
+x = pe_result
+#memory是来自编码器的输出
+memory = en_result
+#实际中source_mask和target._mask并不相同，这里为了方便计算使他们都为mask
+mask = Variable(torch.zeros(8,4,4))
+source_mask = target_maskmask
+
+#调用：
+dl = DecoderLayer(size,self_attn,src_attn,ff,dropout)
+dl_result = dl(x,memory,source_mask,target_mask)
+print(dl_result)
+print(d1_result.shape)
+```
 
 
 
