@@ -1499,13 +1499,154 @@ print(dl_result)
 print(d1_result.shape)
 ```
 
+### 2.4.1 解码器层总结
 
+学习了解码器层的作用：
+作为解码器的组成单元，每个解码器层根据给定的输入向目标方向进行特征提取操作，即解码过程
+·学习并实现了解码器层的类：DecoderLayer
+·类的初始化函数的参数有5个，分别是sz,代表词嵌入的维度大小，同时也代表解码器层的尺寸，第二个是sef_attn,多头自注意力对象，也就是说这个注意力机制需要Q=K=V,第三个是src_attn,多头注意力对象，这里Q!=K=V,第四个是前馈全连接层对象，最后就是droupout置0比率
+forward函数的参数有4个，分别是来自上一层的输入x,来自编码器层的语义存储变量mermory,以及源数据掩码张量和目标数据掩码张量
+·最终输出了由编码器输入和目标数据一同作用的特征提取结果
 
 ## 2.4.2 解码器
+
+学习目标
+·了解解码器的作用.
+·掌握解码器的实现过程
+
+解码器的作用：
+·根据编码器的结果以及上一次预测的结果，对下一次可能出现的'值'进行特征表示.
+
+
+
+
+
+代码讲解
+
+```python
+#使用类Decoder:来实现解码器
+class Decoder(nn.Module):
+    def __init__(self,layer,N):
+        '''初始化函数的参数有两个，第一个就是解码器层layer,第二个是解码器层的个数N.'''
+        super(Decoder,self).__init__()
+        #首先使用clones方法克隆了N个layer,然后实例化了一个规范化层.
+        #因为数据走过了所有抑解码器层后最后要做规范化处理.
+        self.layers = clones(layer,N)
+        self.norm = LayerNorm(layer.size)
+    def forward(self,x,memory,source_mask,target_mask):
+       '''forward函数中的参数有4个，x代表目标数据的嵌入表示，memory是编码器层的输出，
+        source_mask,target_mask代表源数据和目标数据的掩码张量'''
+        #然后就是对每个层进行循环，当然这个循环就是变量X通过每一个层的处理，
+        #得出最后的结果，再进行一次规范化返回即可.
+        for layer in self.layers:
+        	x = layer(x,memory,source_mask,target_mask)
+        return self.norm(x)
+```
+
+
+
+调用
+
+```python
+#实例化参数：
+#分别是解码器层1ayer和解码器层的个数N
+size=512
+d_model =512
+head =8
+d_ff 64
+dropout 0.2
+c copy.deepcopy
+attn MultiHeadedAttention(head,d_model)
+ff PositionwiseFeedForward(d_model,d_ff,dropout)
+layer DecoderLayer(d_model,c(attn),c(attn),c(ff),dropout)
+N=8
+#输入参数：
+#输入参数与解码器层的输入参数相同
+x = pe_result
+memory = en_result
+mask = Variable(torch.zeros(8,4,4))
+source_mask = target_mask = mask
+
+#调用：
+de = Decoder(layer,N)
+de_result = de(x,memory,source_mask,target_mask)
+print(de_result)
+print(de_result.shape)
+```
+
+
+
+### 2.4.2 解码器总结
+
+-   学习了解码器的作用：
+    -   根据编码器的结果以及上一次预测的结果，对下一次可能出现的值'进行特征表示，
+
+-   学习并实现了解码器的类：Decoder类的初始化函数的参数有两个，第一个就是解码器层layer,第二个是解码器层的个数N.
+    -   forward函数中的参数有4个，x代表目标数据的嵌入表示，memory是编码器层的输出，src_mask,tgt_mask代表源数据和目标数据的掩码张量，
+    -   输出解码过程的最终特征表示
 
 
 
 # 2.5 输出部分实现
+
+·学习目标：
+·了解线性层和softmax的作用.
+·掌握线性层和softmax的实现过程，
+输出部分包含：
+·线性层
+·softmax层
+
+![image-20240130234445366](image/image-20240130234445366.png)
+
+。线性层的作用：
+·通过对上一步的线性变化得到指定维度的输出，也就是转换维度的作用，
+。softmax层的作用：
+·使最后一维的向量更的数字缩放到0-1的概率值域内，并满足他们的和为1.
+
+
+
+### 代码讲解
+
+```python
+#nn.functional工具包装载了网络层中那些只进行计算，而没有参数的层
+import torch.nn.functional as F
+#将线性层和softmax计算层一起实现，因为二者的共同目标是生成最后的结构
+#因此把类的名字叫做Generator,生成器类
+class Generator(nn.Module):
+    def __init__(self,d_model,vocab_size):
+        '''初始化函数的输入参数有两个，d_model代表词嵌入维度，vocab_size代表词表大小.'''
+        super(Generator,self).__init__()
+        #首先就是使用nn中的预定义线性层进行实例化，得到一个对象self.project等待使用，
+        #这个线性层的参数有两个，就是初始化函数传进来的两个参数：d_model,vocab_size
+        self.project nn.Linear(d_model,vocab_size)
+	def forward(self,x):
+        '''前向逻辑函数中输入是上一层的输出张量×'''
+        #在函数中，首先使用上一步得到的self.project对x进行线性变化，
+        #然后使用F中已经实现的log_softmax:进行的softmax:处理
+        #在这里之所以使用log_softmax是因为和我们这个bytorch版本的损失函数实现有关，在其他版本
+        #log_softmax就是对softmax的结果又取了对数，因为对数函数是单调递增函数，
+        #因此对最终我们取最大的概率值没有影响.最后返回结果即可.
+        return F.log_softmax(self.project(x),dim=-1)
+```
+
+
+
+#### nn.Linear
+
+转换向量的维度
+
+```python
+#nn.Linear演示：
+>>m = nn.Linear(20,30)
+>>input = torch.randn(128,20)
+>>output = m(input)
+>>print(output.size())
+torch.Size([128,30])
+```
+
+
+
+
 
 
 
