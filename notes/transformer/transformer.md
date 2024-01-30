@@ -684,7 +684,7 @@ P9 9.2.3.1
 
 #### np.triu
 
- [mask.py](..\..\transformer\test\mask.py) 
+ [mask.py](..\..\transformer\mask.py)
 
 `np.triu` 是 NumPy 库中的一个函数，用于生成一个上三角矩阵。这个函数返回一个数组，该数组的上三角部分（包括主对角线）包含1，而下三角部分（不包括主对角线）包含0。
 
