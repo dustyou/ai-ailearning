@@ -1646,12 +1646,260 @@ torch.Size([128,30])
 
 
 
+### 小节总结：
 
+。学习了输出部分包含：
+·线性层
+·softmax层
+。线性层的作用：
+·通过对上一步的线性变化得到指定维度的输出，也就是转换维度的作用.
+。softmax层的作用：
+·使最后一维的向量中的数字缩放到0-1的概率值域内，并满足他们的和为1.
+·学习并实现了线性层和softmax层的类：Generator
+·初始化函数的输入参数有两个，d_model代表词嵌入维度，vocab_size代表词表大小，
+forward函数接受上一层的输出.
+·最终获得经过线性层和softmax层处理的结果，
 
 
 
 # 2.6 模型构建
 
+·学习目标：
+·掌握编码器-解码器结构的实现过程
+·掌握Transformer模型的构建过程
+·通过上面的小节，我们已经完成了所有组成部分的实现，接下来就来实现完整的编码器-解码器
+结构.
+·Transformer总体架构图：
+
+![image-20240131203935420](image/image-20240131203935420.png)
+
+
+
+### 代码讲解
+
+```python
+#使用EncoderDecoder类来实现编码器-解码器结构
+
+class EncoderDecoder(nn.Module):
+    def __init__(self,encoder,decoder,source_embed,target_embed,generator):
+        '''初始化函数中有5个参数，分别是编码器对象，解码器对象，
+        源数据嵌入函数，目标数据嵌入函数，以及输出部分的类别生成器对象
+        '''
+        super(EncoderDecoder,self).__init__()
+        #将参数传入到类中
+        self.encoder = encoder
+        self.decoder = decoder
+        self.src_embed = source_embed
+        self.tgt_embed = target_embed
+        self.generator = generator
+    def forward(self,source,target,source_mask,target_mask):
+        ''''
+        在forwardi函数中，有四个参数，source代表源数据，target代表目标数据，
+        source._mask和target_mask代表对应的掩码张量
+        '''
+        #在函数中，将source,source_mask传入编码函数，得到结果后，
+        #与source_mask,target,和target_mask一同传给解码函数.
+        return self.decode(self.encode(source,source_mask),source_mask,        target,target_mask)
+    
+    def encode(self,source,source_mask):
+        '''编码函数，以source和source_mask为参数'''
+        #使用src_embedi对source做处理，然后和source_mask一起传给self.encoder
+        return self.encoder(self.src_embed(source),source_mask)
+    
+    def decode(self,memory,source_mask,target,target_mask):
+        '''解码函数，以memo ryl即编码器的输出，source_.mask,target,target_.mask为参数'''
+        #使用tgt_embed:对target做处理，然后和source._mask,target_mask,memo ry-一起传给seelf.decoder
+        return self.decoder(self.tgt_embed(target),memory,source_mask,target_mask)
+```
+
+
+
+调用
+
+```python
+#实例化参数
+vocab_size = 1000
+d_model = 512
+encoder = en
+decoder = de
+source_embed = nn.Embedding(vocab_size,d_model)
+target_embed = nn.Embedding(vocab_size,d_model)
+generator = gen
+#输入参数
+#假设源数据与目标数据相同，实际中并不相同
+source = target = Variable(torch.LongTensor([[100,2,421,508],[491,998,1,221]]))
+#假设src_mask与tgt_mask相同，实际中并不相同
+sorrce_mask = target_mask = Variable(torch.zeros(8,4,4))
+                                             
+# 调用：
+ed = EncoderDecoder(encoder,decoder,source_embed,target_embed,generator)
+ed_result = ed(source,target,source_mask,target_mask)
+print(ed_result)
+print(ed_result.shape)
+
+# 输出效果
+tensor([[[0.2102,-0.0826,-0.0550,
+1.5555,
+1.3025,-0.6296],
+[0.8270,-0.5372,-0.9559
+0.3665,
+0.4338,
+-0.7505],
+[0.4956,-0.5133,-0.9323,
+1.0773,
+1.1913,
+-0.6240],
+[0.5770,-0.6258,-0.4833,
+0.1171,
+1.0069,-1.9030]],
+[[-0.4355,-1.7115,-1.5685,
+..,-0.6941,-0.1878,-0.1137]，
+[-0.8867,-1.2207,-1.4151,
+-0.9618,0.1722,-0.9562],
+[-0.0946,-0.9012,-1.6388,
+-0.2604,-0.3357,-0.6436],
+[-1.1204,-1.4481,-1.58,
+.,-0.8816,-0.6497,0.0686]],
+grad_fn=<AddBackward0>)
+torch.Size([2,4,512])
+```
+
+
+
+接着将基于以上结构构建用于训练的模型
+
+```python
+def make_model(source_vocab,target_vocab,N=6,
+    d_model=512,d_ff=2048,head=8,dropout=0.1):
+    '''该函数用来构建模型，有7个参数，分别是源数据特征（词汇）总数，目标数据特征（词汇）总数，
+    编码器和解码器堆叠数，词向量映射维度，前馈全连接网络中变换矩阵的维度，
+    多头注意力结构中的多头数，以及置零比率dropout.
+    '''
+    #首先得到一个深度拷贝命令，接下来很多结构都需要进行深度拷贝，
+    #来保证他们彼此之间相互独立，不受干扰，
+    c = copy.deepcopy
+    #实例化了多头注意力类，得到对象attn
+    attn = MultiHeadedAttention(head,d_model)
+    #然后实例化前馈全连接类，得到对象ff
+    ff = PositionwiseFeedForward(d_model,d_ff,dropout)
+    #实例化位置编码类，得到对象position
+    position = PositionalEncoding(d_model,dropout)
+    #根据结构图，最外层是EncoderDecoder,在EncoderDecoder中，
+    #分别是编码器层，解码器层，源数据Embedding层和位置编码组成的有序结构，
+    #目标数据Embedding层和位置编码组成的有序结构，以及类别生成器层.
+    #在编码器层中有attention子层以及前馈全连接子层，
+    #在解码器层中有两个attent1on子层以及前馈全连接层.
+    model = EncoderDecoder(
+        Encoder(EncoderLayer(d_model,c(attn),c(ff),dropout),N),
+    	Decoder(DecoderLayer(d_model,c(attn),c(attn), c(ff),dropout),N),
+    	nn.Sequential(Embeddings(d_model,source_vocab),c(position)),
+    	nn.Sequential(Embeddings(d_model,target_vocab),c(position)),
+    	Generator(d_model,target_vocab)
+    )
+    #模型结构完成后，接下来就是初始化模型中的参数，比如线性层中的变换矩阵
+    #这里一但判断参数的维度大于1，则会将其初始化成一个服从均匀分布的矩阵，
+    for p in model.parameters():
+        if p.dim()>1:
+        nn.init.xavier_uniform(p)
+    return model
+```
+
+
+
+nn.init.xavier_.uniform演示：
+
+```python
+#结果服从均匀分布U(-a,a)
+>>>w torch.empty(3,5)
+>>>W=nn.init.xavier_uniform_(w,gain=nn.init.calculate_gain('relu'))
+>>>W
+tensor([-0.7742,
+0.5413,
+0.5478,-0.4806,-0.2555],
+[-0.8358,
+0.4673,0.3012,0.3882,-0.6375],
+[0.4622,-0.0794,0.1851,0.8462,-0.3591]])
+```
+
+
+
+调用
+
+```python
+source_vocab 11
+target_vocab 11
+N=6
+if __name__=='main':
+    res make_model(source_vocab,target_vocab,N)
+    print(res)
+```
+
+
+
+### 小节总结
+
+·学习并实现了编码器-解码器结构的类：EncoderDecoder
+
+类的初始化函数传入5个参数，分别是编码器对象，解码器对象，源数据嵌入函数，目标数
+据嵌入函数，以及输出部分的类别生成器对象
+·类中共实现三个函数，forward,encode,decode
+forward,是主要逻辑函数，有四个参数，source代表源数据，target代表目标数据，source_mask和target_mask代表对应的掩码张量
+
+encode:是编码函数，以source和source_mask为参数
+decode:是解码函数，以memory即编码器的输出，source_mask,target,target_mask为参数
+·学习并实现了模型构建函数：make_model
+·有7个参数，分别是源数据特征（词汇）总数，目标数据特征（词汇）总数，编码器和解码
+器堆叠数，词向量映射维度，前馈全连接网络中变换矩阵的维度，多头注意力结构中
+的多头数，以及置零比率dropout..
+·该函数最后返回一个构建好的模型对象
+
 
 
 # 2.7 模型基本测试运行
+
+。学习目标：
+·了解Transformer模型基本测试的copy任务
+·掌握实现copy任务的四步曲，
+
+·我们将通过一个小的copy任务完成模型的基本测试工作
+·copy任务介绍：
+·任务描述：针对数字序列进行学习，学习的最终目标是使输出与输入的序列相同.如输入[1,5,8,9,3],输出也是[1,5,8,9,3].
+·任务意义：copy任务在模型基础测试中具有重要意义，因为copy操作对于模型来讲是一条明显规律，因此模型能否在短时间内，小数据集中学会它，可以帮助我们断定模型所有过程是否正常，是否已具备基本学习能力
+·使用copy任务进行模型基本测试的四步曲：
+·第一步：构建数据集生成器
+·第二步：获得Transformert模型及其优化器和损失函数
+
+·第三步：运行模型进行训练和评估
+·第四步：使用模型进行贪婪解码
+
+
+
+### 第一步：构建数据集生成器
+
+
+
+```python
+#导入工具包Batch,它能够对原始样本数据生成对应批次的掩码张量
+from pyitcast.transformer_utils import Batch
+    def data_generator(V,batch,num_batch):
+        '''该函数用于随机生成copy任务的数据，它的三个输入参数是V:随机生成数字的最大值+1，
+        batch:每次输送给模型更新一次参数的数据量，num_batch:一共输送num_batch次完成一轮
+        '''
+        #使用for循环遍历nbatches
+        for i in range(num_batch):
+            #在循环中使用np的random.randint方法随机生成[1，V)的整数，
+            #分布在(batch,1g)形状的矩阵中，然后再把numpy形式转换称torch中的tensor.
+            data = torch.from_numpy(np.random.randint(1,V,size=(batch,10)))
+            #接着使数据矩阵中的第一列数字都为1，这一列也就成为了起始标志列，
+            #当解码器进行第一次解码的时候，会使用起始标志列作为输入·
+            data[:,0] = 1
+            #因为是copy任务，所有source与target:是完全相同的，且数据样本作用变量不需要求梯度
+            #因此requires-grad设置为False
+            source Variable(data,requires_grad=False)
+            target Variable(data,requires_grad=False)
+            #使用Batch对source和target进行对应批次的掩码张量生成，最后使用yield返回
+            yield Batch(source,target)
+```
+
+
+
