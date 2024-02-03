@@ -1857,7 +1857,7 @@ decode:是解码函数，以memory即编码器的输出，source_mask,target,tar
 
 # 2.7 模型基本测试运行
 
-。学习目标：
+学习目标：
 ·了解Transformer模型基本测试的copy任务
 ·掌握实现copy任务的四步曲，
 
@@ -1876,7 +1876,7 @@ decode:是解码函数，以memory即编码器的输出，source_mask,target,tar
 
 ### 第一步：构建数据集生成器
 
-
+#### 代码讲解
 
 ```python
 #导入工具包Batch,它能够对原始样本数据生成对应批次的掩码张量
@@ -1900,6 +1900,326 @@ from pyitcast.transformer_utils import Batch
             #使用Batch对source和target进行对应批次的掩码张量生成，最后使用yield返回
             yield Batch(source,target)
 ```
+
+
+
+调用
+
+```python
+#输入参数
+#将生成0h的整数
+V=11
+#每次喂给预型2日个数据进行梦泼更新
+batch = 20
+#连续張3B次完成全部数据的遍历，也就是1轮
+num_batch = 30
+#调用：
+if -_name_-=='__main__':
+	res = data_generator(V,batch,num_batch)
+	print(res)
+#输出效果：
+#会得到一个敌据生成器（生成器对象）
+<generator object data_gen t 8x10c053e08>
+```
+
+
+
+### 第二步：获得Transformer模型及其优化器和损失函数
+
+
+
+#### 代码讲解
+
+```python
+#导入优化器工具包get_std_opt,该工具用于获得标准的针对Transformer模型的优化器
+#该标准优化器基于Adam优化器，使其对序列到序列的任务更有效.
+from pyitcast.transformer_utils import get_std_opt
+#导入标签平滑工具包，该工具用于标签平滑，标签平滑的作用就是小幅度的改变原有标签值的值域
+#因为在理论上即使是人工的标注数据也可能并非完全正确，会受到一些外界因素的影响而产生一些微小的偏差
+#因此使用标签平滑来弥补这种偏差，减少模型对某一条规律的绝对认知，以防止过拟合
+from pyitcast.transformer_utils import LabelSmoothing
+#导入损失计算工具包，该工具能够使用标签平滑后的结果进行损失的计算，
+#损失的计算方法可以认为是交叉熵损失函数。
+from pyitcast.transformer_utils import SimpleLossCompute
+#使用make_model获得model
+model = make_model(V,V,N=2)
+#使用get_std_opt获得模型优化器
+model_optimizer = get_std_opt(model)
+#使用LabelSmoothing获得标签平滑对象
+criterion = LabelSmoothing(size=V,padding_idx=0,smoothing=0.0)
+#使用SimpleLossCompute获得利用标签平滑结果的损失计算方法
+loss = SimpleLossCompute(model.generator,criterion,model_optimizer)
+```
+
+
+
+
+
+#### 标签平滑示例
+
+```python
+
+from pyitcast.transformer_utils import LabelSmoothing
+#使用LabelSmoothing实例化一个crit对象.
+#第一个参数s1ze代表目标数据的词汇总数，也是模型最后一层得到张量的最后一维大小
+#这里是5说明目标词汇总数是5个.第二个参数padding._idx表示要将那些tensor中的数字
+#替换成0，一般padding_idx=0表示不进行替换.第三个参数smoothing,表示标签的平滑程度
+#如原来标签的表示值为1，则平滑后它的值域变为[1-smoothing,1+smoothing],
+crit = LabelSmoothing(size=5,padding_idx=0,smoothing=0.5)
+#假定一个任意的模型最后输出预测结果和真实结果
+predict =Variable(torch.FloatTensor([
+    [0,0.0.7,0.1,0],
+    [0,0.2,0.7,0.1,0],
+    [0,0.2,0.7,0.1,0]]))
+#标签的表示值是0,1,2
+target = Variable(torch.LongTensor([2,1,0]))
+#将predict,target传入到对象中
+crit(predict,target)
+#绘制标签平滑图像
+plt.imshow(crit.true_dist)
+```
+
+
+
+### 第三步：运行模型进行训练和评估
+
+```python
+#导入模型单轮训练工具包run_epoch,该工具将对模型使用给定的损失函数计算方法进行单轮参数更新
+#并打印每轮参数更新的损失结果：
+from pyitcast.transformer_utils import run_epoch
+def run(model,loss,epochs=10):
+    '''模型训练函数，共有三个参数，model代表将要进行训练的模型
+    1oss代表使用的损失计算方法，epochst代表模型训练的轮数'''
+    #遍历轮数
+    for epoch in range(epochs):
+        #模型使用训练模式，所有参数将被更新
+        model.train()
+        #训练时，batch_size是20
+        run_epoch(data_generator(V,8,20),model,loss)
+        #模型使用评估模式，参数将不会变化
+        model.eval()
+        #评估时，batch_size是5
+        run_epoch(data_generator(V,8,5),model,loss)
+```
+
+
+
+
+
+```python
+#输入参数：
+#进行10轮训练
+epochs = 10
+#mode1和1oss都是来自上一步的结果
+```
+
+
+
+### 小节总结
+
+·学习了copy任务的相关知识：
+任务描述：针对数字序列进行学习，学习的最终目标是使输出与输入的序列相同.如输入[1,5,8,9,3]输出也是[1,5,8,9,3]
+·任务意义：copy任务在模型基础测试中具有重要意义，因为copy操作对于模型来讲是一条明显规律，因此模型能否在短时间内，小数据集中学会它，可以帮助我们断定模型所有过程是否正常，是否已具备基本学习能力.
+学习了使用copy任务进行模型基本测试的四步曲：
+·第一步：构建数据集生成器
+·第二步：获得Transformer模型及其优化器和损失函数
+·第三步：运行模型进行训练和评估
+·第四步：使用模型进行贪梦解码
+
+学习并实现了构建数据集生成器函数：data_gen
+·它有三个输入参数，分别是V:随机生成数字的最大值+1，batch:每次输送给模型更新一次参数的数据量，nbatches:一共输送nbatches次完成一轮
+·该函数最终得到一个生成器对象，
+
+·学习了获得Transformer模型及其优化器和损失函数：
+·通过导入优化器工具包get_std_opt,获得标准优化器，
+·通过导入标签平滑工具包LabelSmoothing,进行标签平滑
+·通过导入损失计算工具包SimpleLossCompute,计算损失，
+
+学习并实现了运行模型进行训练和评估函数：run
+·在函数中导入模型单轮训练工具包run_epoch,对模型进行单轮训练.
+·函数共有三个参数，modl代表将要进行训练的模型，slc代表使用的损失计算方法，epochs代表模型训练的轮数
+·函数最终打印了模型训练和评估两个过程的损失
+·学习并实现了使用模型进行贪婪解码：
+·通过导入贪婪解码工具包greedy_.decode,根据输入得到最后输出，完成了copy任务.
+
+# 第三章：Transformer经典案例
+
+# 3.1使用Transformer构建语言模型
+
+·学习目标
+·了解有关语言模型的知识
+·掌握使用Transformer构建语言模型的实现过程，
+·什么是语言模型？
+·以一个符合语言规律的序列为输入，模型将利用序列间关系等特征，输出一个在所有词汇
+上的概率分布这样的模型称为语言模型
+
+语言模型的训练语料一设来自于文章，对应的源文本和目标文本形如：
+
+```
+src1 "I can do"tgt1 "can do it"
+src2 "can do it",tgt2 "do it seos>"
+```
+
+·语言模型能解决娜些问题？
+·1,根据语言模型的定义，可以在它的基础上完成机器翻译，文本生成等任务，因为我们通过最后输出的概率分布来预测下一个词汇是什么
+
+·2,语言模型可以判断输入的序列是否为一句完整的话，因为我们可以根据输出的概率分布查看最大概率是否落在句子结束符上，来判断完整性
+·3,语言模型本身的训练目标是预测下一个词，因为它的特征提取部分会抽象很多语言序列之间的关系，这些关系可能同样对其他语言类任务有效果因此可以作为预训练模型进行迁移学习.
+
+·整个案例的实现可分为以下五个步骤：
+·第一步：导入必备的工具包
+·第二步：导入wikiText-2数据集并作基本处理
+·第三步：构建用于模型输入的批次化数据
+·第四步：构建训练和评估函数
+·第五步：进行训练和评估（包括验证以及测试）
+
+
+
+## 第一步：导入必备的工具包
+
+```
+pytorch版本必须使用1.31，python版本使用3.6.x
+pip install torch==1.3.1
+```
+
+
+
+```python
+#数学计算工具包math
+import math
+#torch以及torch.nn,torch.nn.functional
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+#torch中经典文本数据集有关的工具包
+#具体详情参考下方torchtext介绍
+import torchtext
+#torchtext中的数据处理工具，get_tokenizer用于英文分词
+from torchtext.data.utils import get_tokenizer
+#已经构建完成的TransformerMode1
+from pyitcast.transformer import TransformerModel
+```
+
+
+
+torchtext介绍：
+·它是torch工具中处理NLP问题的常用数据处理包
+。torchtext的重要功能：
+对文本数进行处理，比如文本语料加就，文本送代器构建等
+
+*包含很多经典文本语料的预加载方法，其中包括的语料有：用于情感分析的SST和IMDB, 用于问题分类的TREC,用于机器翻译的MT14,IWSL
+我们这里使用wikiText-2来训川练语言模型，下面有关该数据集的相关详情：
+
+
+
+| Penn Treebank |        |        |        | WikiText-2 |         |         | WikiText-103 |         |         |
+| ------------- | ------ | ------ | ------ | ---------- | ------- | ------- | ------------ | ------- | ------- |
+| Train         | Valid  | Valid  | Test   | Train      | Valid   | Test    | Train        | Valid   | Test    |
+| Articles      |        |        |        | 600        | 60      | 60      | 28,475       | 60      | 60      |
+| Tokens        | 887521 | 70,390 | 78,669 | 2.088,628  | 217.646 | 245,569 | 103,227.021  | 217.646 | 245,569 |
+| Vocab         | 10,000 |        |        | 33,278     |         |         | 267,735      |         |         |
+| OoV           | 4.8%   |        |        | 2.6%       |         |         | 0.4%         |         |         |
+
+
+
+wikiText--2数据集的体量中等，训练集共有600篇短文，共208万左右的词汇，33278个不重复词汇，OoV(有多少正常英文词汇不在该数据集中的占比)为2.6%，数据集中的短文都是维基百科中对一些概念的介绍和描述
+
+
+
+## 第二步：导入wikiText-2数据集并作基本处理
+
+
+
+```python
+#创建语料域，语料域是存放语料的数据结构，
+#它的四个参敦代表给存放语料（或称作文本）施加的作用.
+#分别为tokenize,使用get_tokenizer("basic_-english")获得一个分割器对象，
+#分割方式按照文本为基础英文进行分割.
+#init_token为给文本施加的起始符<sos>给文本施加的终止符<eos>,
+#最后一个lower为True,存放的文本字母全部小写.
+TEXT = torchtext.data.Field(tokenize=get_tokenizer("basic_english"),
+    init_token='<sos>',
+    eos_token='<eos>',
+    lower=True)
+#最终获得一个Field对象.
+#<torchtext.data.field.Field object at 0x7fc42a02e7f0>
+#然后使用torchtext的数据集方法导入WikiText2数据，
+#并切分为对应训练文本，验证文本，测试文本，并对这些文本施加刚刚创建的语料域.
+train_txt,val_txt,test_txt = torchtext.datasets.WikiText2.splits(TEXT)
+
+#我们可以通过examples[g].text取出文本对象进行查看.
+#>>test_txt.examples[0].text[10]
+#['<eos>','=','robert','<unk>','=','<eos>','<eos>','robert','<unk>','is']
+#将训练集文本数据构建一个vocab对象，
+#这样可以使用vocab对象的stoi方法统计文本共包含的不重复词汇总数.
+TEXT.build_vocab(train_txt)
+#然后选择设备cuda或者cpu
+device torch.device("cuda"if torch.cuda.is_available()else "cpu")
+```
+
+
+
+## 第三步：构建用于模型输入的批次化数据
+
+批次化过程的第一个函数batchifyf代码分析：
+
+```python
+def batchify(data,bsz):
+
+'''batchify函数用于将文本数据映射成连续数字，并转换成指定的样式，
+指定的样式可参考下图.
+它有两个输入参数，data就是我们之前得到的文本数据(train_txt,val_t×t,test_txt),
+bsz是就是batch_-s1ze,每次模型更新参数的数据量'''
+#使用TEXT的numericalize方法将单词映射成对应的连续数字
+data TEXT.numericalize([data.examples[0].text])
+#>>>data
+#tensor([[3]
+#[12],
+#[3852],
+#...
+#[6],
+#[3],
+#3]])
+#接着用数据词汇总数除以bsz,
+#取整数得到一个nbatch代表需要多少次batch后能够遍历完所有数据
+nbatch = data.size(0)//bsz
+#之后使用narrow方法对不规整的剩余数据进行删除，
+#第一个参数是代表横轴删除还是纵轴删除，日为横轴，1为纵轴
+#第二个和第三个参数代表保留开始轴到结束轴的数值.类似于切片
+#可参考下方演示示例进行更深理解，
+data = data.narrow(0,0,nbatch bsz)
+#>>data
+#tensor([[3],
+#[12],
+[3852].
+#
+#
+61,
+#
+3].
+3]])
+#接看用数据词汇总数除以bsz
+#取整数得到一个nbatch代表需要多少次batch后能够遍历完所有数据
+nbatch data.size(0)//bsz
+#之后使用narrow方法对不规整的测余数据进行刷除，
+#第一个参数是代表横轴除还是纵轴制除，了日为横轴，1为纵轴
+#第二个和第三个参数代表保留开始轴到结鼒轴的数值.类似于切片
+#可参考下方演示示例进行更深理解
+data data.narrow(0,0,nbatch bsz)
+#data
+#tensor([[
+3].
+#[21],
+#[3852],
+#...
+#[78],
+#[299],
+#[3611]])
+#后面不能形成bSZ个的一组数据被除
+
+```
+
+
 
 
 

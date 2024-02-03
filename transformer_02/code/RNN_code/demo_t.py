@@ -72,7 +72,7 @@ max_len = 60
 # pe_result = pe(x)
 # print(pe_result)
 # print(pe_result.shape)
-        
+
 # -------------------------------------------
 
 # plt.figure(figsize=(15, 5))
@@ -87,9 +87,9 @@ max_len = 60
 
 def subsequent_mask(size):
     attn_shape = (1, size, size)
-    
+
     sub_mask = np.triu(np.ones(attn_shape), k=1).astype('uint8')
-    
+
     return torch.from_numpy(1 - sub_mask)
 
 sm = subsequent_mask(5)
@@ -102,17 +102,17 @@ sm = subsequent_mask(5)
 
 def attention(query, key, value, mask=None, dropout=None):
     d_k = query.size(-1)
-    
+
     scores = torch.matmul(query, key.transpose(-2, -1)) // math.sqrt(d_k)
-    
+
     if mask is not None:
         scores = scores.masked_fill(mask == 0, -1e9)
 
     p_attn = F.softmax(scores, dim=-1)
-    
+
     if dropout is not None:
         p_attn = dropout(p_attn)
-    
+
     return torch.matmul(p_attn, value), p_attn
 
 
@@ -137,24 +137,24 @@ class MultiHeadAttention(nn.Module):
         self.embedding_dim = embedding_dim
         self.dropout = nn.Dropout(p=dropout)
         self.d_k = embedding_dim // head
-        
+
         self.linears = clone(nn.Linear(embedding_dim, embedding_dim), 4)
         self.attn = None
-    
+
     def forward(self, query, key, value, mask=None):
         if mask is not None:
             mask = mask.unsqueeze(0)
-        
+
         batch_size = query.size(0)
-        
+
         query, key, value = \
-               [model(x).view(batch_size, -1, self.head, self.d_k).transpose(1, 2) 
+               [model(x).view(batch_size, -1, self.head, self.d_k).transpose(1, 2)
                 for model, x in zip(self.linears, (query, key, value))]
-        
+
         x, self.attn = attention(query, key, value, mask, self.dropout)
-        
+
         x = x.transpose(1, 2).contiguous().view(batch_size, -1, self.head * self.d_k)
-        
+
         return self.linears[-1](x)
 
 
@@ -168,7 +168,7 @@ dropout = 0.2
 # mha = MultiHeadAttention(head, embedding_dim, dropout)
 # mha_result = mha(query, key, value, mask)
 # print(mha_result)
-# print(mha_result.shape)     
+# print(mha_result.shape)
 
 # -----------------------------------------------
 
@@ -178,7 +178,7 @@ class PositionalwiseFeedForward(nn.Module):
         self.w1 = nn.Linear(d_model, d_ff)
         self.w2 = nn.Linear(d_ff, d_model)
         self.dropout = nn.Dropout(p=dropout)
-    
+
     def forward(self, x):
         return self.w2(self.dropout(F.relu(self.w1(x))))
 
@@ -201,7 +201,7 @@ class LayerNorm(nn.Module):
         self.eps = eps
         self.a2 = nn.Parameter(torch.ones(features))
         self.b2 = nn.Parameter(torch.zeros(features))
-        
+
     def forward(self, x):
         mean = x.mean(-1, keepdim=True)
         std = x.std(-1, keepdim=True)
@@ -224,7 +224,7 @@ class SubLayerConnection(nn.Module):
         self.size = size
         self.dropout = nn.Dropout(p=dropout)
         self.norm = LayerNorm(size)
-    
+
     def forward(self, x, sublayer):
         return x + self.dropout(sublayer(self.norm(x)))
 
@@ -250,7 +250,7 @@ class EncoderLayer(nn.Module):
         self.feed_forward = feed_forward
         self.dropout = nn.Dropout(p=dropout)
         self.sublayer = clone(SubLayerConnection(size, dropout), 2)
-    
+
     def forward(self, x, mask):
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, mask))
         return self.sublayer[1](x, self.feed_forward)
@@ -308,12 +308,12 @@ class DecoderLayer(nn.Module):
         self.feed_forward = feed_forward
         self.dropout = nn.Dropout(p=dropout)
         self.sublayer = clone(SubLayerConnection(size, dropout), 3)
-    
+
     def forward(self, x, memory, source_mask, target_mask):
         m = memory
-        
+
         x = self.sublayer[0](x, lambda x: self.self_attn(x, x, x, target_mask))
-        
+
         x = self.sublayer[1](x, lambda x: self.src_attn(x, m, m, source_mask))
 
         return self.sublayer[2](x, self.feed_forward)
@@ -344,7 +344,7 @@ class Decoder(nn.Module):
         self.N = N
         self.layers = clone(layer, N)
         self.norm = LayerNorm(layer.size)
-    
+
     def forward(self, x, memory, source_mask, target_mask):
         for layer in self.layers:
             x = layer(x, memory, source_mask, target_mask)
@@ -380,7 +380,7 @@ class Generator(nn.Module):
         self.vocab_size = vocab_size
         self.embedding_dim = embedding_dim
         self.project = nn.Linear(d_model, vocab_size)
-    
+
     def forward(self, x):
         return F.log_softmax(self.project(x), dim=-1)
 
@@ -404,16 +404,16 @@ class EncoderDecoder(nn.Module):
         self.src_embed = source_embed
         self.tgt_embed = target_embed
         self.generator = generator
-    
+
     def encode(self, source, source_mask):
         return self.encoder(self.src_embed(source), source_mask)
-    
+
     def decode(self, memory, source_mask, target, target_mask):
-        return self.decoder(self.tgt_embed(target), memory, source_mask, 
+        return self.decoder(self.tgt_embed(target), memory, source_mask,
                             target_mask)
-    
+
     def forward(self, source, target, source_mask, target_mask):
-        return self.decode(self.encode(source, source_mask), source_mask, 
+        return self.decode(self.encode(source, source_mask), source_mask,
                            target, target_mask)
 
 
@@ -437,24 +437,23 @@ class EncoderDecoder(nn.Module):
 def make_model(source_vocab, target_vocab, N=6, d_model=512,
                d_ff=2048, head=8, dropout=0.1):
     c = copy.deepcopy
-    
+
     attn = MultiHeadAttention(head, d_model, dropout)
-    
+
     ff = PositionalwiseFeedForward(d_model, d_ff, dropout)
-    
+
     position = PositionalEncoding(d_model, dropout)
-    
+
     model = EncoderDecoder(
             Encoder(EncoderLayer(d_model, c(attn), c(ff), dropout), N),
             Decoder(DecoderLayer(d_model, c(attn), c(attn), c(ff), dropout), N),
             nn.Sequential(Embedding(d_model, source_vocab), c(position)),
             nn.Sequential(Embedding(d_model, target_vocab), c(position)),
             Generator(d_model, target_vocab))
-    
     for p in model.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform(p)
-            
+
     return model
 
 
@@ -475,16 +474,19 @@ from pyitcast.transformer_utils import SimpleLossCompute
 from pyitcast.transformer_utils import run_epoch
 from pyitcast.transformer_utils import greedy_decode
 
-
 def data_generator(V, batch, num_batch):
     for i in range(num_batch):
-        data = torch.from_numpy(np.random.randint(1, V, size=(batch, 10)))
-        
+        # data = torch.from_numpy(np.random.randint(1, V, size=(batch, 10)))
+        data = torch.from_numpy(np.random.randint(1, V, size=(batch, 10)).astype(np.int64))
+
         data[:, 0] = 1
-        
-        source = Variable(data, requires_grad=False)
-        target = Variable(data, requires_grad=False)
-        
+
+        source = torch.tensor(data, dtype=torch.int64, requires_grad=False)
+        target = torch.tensor(data, dtype=torch.int64, requires_grad=False)
+
+        # source = data.clone().detach().requires_grad_(False)
+        # target = data.clone().detach.requires_grad_(False)
+
         yield Batch(source, target)
 
 
@@ -496,13 +498,13 @@ num_batch = 30
 # if __name__ == '__main__':
 #     res = data_generator(V, batch, num_batch)
 #     print(res)
-        
+from pyitcast.transformer_utils import SimpleLossCompute
+
 model = make_model(V, V, N=2)
 
 model_optimizer = get_std_opt(model)
 
 criterion = LabelSmoothing(size=V, padding_idx=0, smoothing=0)
-
 loss = SimpleLossCompute(model.generator, criterion, model_optimizer)
 
 
@@ -515,13 +517,13 @@ def run(model, loss, epochs=10):
         model.eval()
         
         run_epoch(data_generator(V, 8, 5), model, loss)
-    
+
     model.eval()
 
     source = Variable(torch.LongTensor([[1,3,2,5,4,6,7,8,9,10]]))
-    
+
     source_mask = Variable(torch.ones(1, 1, 10))
-    
+
     result = greedy_decode(model, source, source_mask, max_len=10, start_symbol=1)
     print(result)
 
