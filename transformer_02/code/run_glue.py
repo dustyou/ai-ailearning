@@ -36,29 +36,29 @@ except:
 
 from tqdm import tqdm, trange
 
-from transformers import (WEIGHTS_NAME, BertConfig,
-                                  BertForSequenceClassification, BertTokenizer,
-                                  RobertaConfig,
-                                  RobertaForSequenceClassification,
-                                  RobertaTokenizer,
-                                  XLMConfig, XLMForSequenceClassification,
-                                  XLMTokenizer, XLNetConfig,
-                                  XLNetForSequenceClassification,
-                                  XLNetTokenizer,
-                                  DistilBertConfig,
-                                  DistilBertForSequenceClassification,
-                                  DistilBertTokenizer,
-                                  AlbertConfig,
-                                  AlbertForSequenceClassification, 
-                                  AlbertTokenizer,
-                                )
+from transformers_01 import (WEIGHTS_NAME, BertConfig,
+                             BertForSequenceClassification, BertTokenizer,
+                             RobertaConfig,
+                             RobertaForSequenceClassification,
+                             RobertaTokenizer,
+                             XLMConfig, XLMForSequenceClassification,
+                             XLMTokenizer, XLNetConfig,
+                             XLNetForSequenceClassification,
+                             XLNetTokenizer,
+                             DistilBertConfig,
+                             DistilBertForSequenceClassification,
+                             DistilBertTokenizer,
+                             AlbertConfig,
+                             AlbertForSequenceClassification,
+                             AlbertTokenizer,
+                             )
 
-from transformers import AdamW, get_linear_schedule_with_warmup
+from transformers_01 import AdamW, get_linear_schedule_with_warmup
 
-from transformers import glue_compute_metrics as compute_metrics
-from transformers import glue_output_modes as output_modes
-from transformers import glue_processors as processors
-from transformers import glue_convert_examples_to_features as convert_examples_to_features
+from transformers_01 import glue_compute_metrics as compute_metrics
+from transformers_01 import glue_output_modes as output_modes
+from transformers_01 import glue_processors as processors
+from transformers_01 import glue_convert_examples_to_features as convert_examples_to_features
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,7 @@ def train(args, train_dataset, model, tokenizer):
             if args.model_type != 'distilbert':
                 inputs['token_type_ids'] = batch[2] if args.model_type in ['bert', 'xlnet'] else None  # XLM, DistilBERT and RoBERTa don't use segment_ids
             outputs = model(**inputs)
-            loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
+            loss = outputs[0]  # model outputs are always tuple in transformers_01 (see doc)
 
             if args.n_gpu > 1:
                 loss = loss.mean() # mean() to average on multi-gpu parallel training
@@ -513,7 +513,7 @@ def main():
         checkpoints = [args.output_dir]
         if args.eval_all_checkpoints:
             checkpoints = list(os.path.dirname(c) for c in sorted(glob.glob(args.output_dir + '/**/' + WEIGHTS_NAME, recursive=True)))
-            logging.getLogger("transformers.modeling_utils").setLevel(logging.WARN)  # Reduce logging
+            logging.getLogger("transformers_01.modeling_utils").setLevel(logging.WARN)  # Reduce logging
         logger.info("Evaluate the following checkpoints: %s", checkpoints)
         for checkpoint in checkpoints:
             global_step = checkpoint.split('-')[-1] if len(checkpoints) > 1 else ""

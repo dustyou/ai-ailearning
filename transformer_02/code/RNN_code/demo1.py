@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'tokenizer', 'bert-base-chinses')
-# model = torch.hub.load('huggingface/pytorch-transformers', 'model', 'bert-base-chinses')
+# tokenizer = torch.hub.load('huggingface/pytorch-transformers_01', 'tokenizer', 'bert-base-chinses')
+# model = torch.hub.load('huggingface/pytorch-transformers_01', 'model', 'bert-base-chinses')
 
 def get_bert_encode(text1, text2, mark=102, max_len=10):
     indexed_tokens = tokenizer.encode(text1, text2)

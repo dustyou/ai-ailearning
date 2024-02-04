@@ -18,19 +18,19 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler, Tens
 from tqdm import tqdm
 
 # 从transformers中导入BERT模型的相关工具
-from transformers import (BertConfig, BertForSequenceClassification, BertTokenizer)
+from transformers_01 import (BertConfig, BertForSequenceClassification, BertTokenizer)
 
 # 从transformers中导入GLUE数据集评估指标方法
-from transformers import glue_compute_metrics as compute_metrics
+from transformers_01 import glue_compute_metrics as compute_metrics
 
 # 从transformers中导入GLUE数据集的输出模式
-from transformers import glue_output_modes as output_modes
+from transformers_01 import glue_output_modes as output_modes
 
 # 从transformers中导图GLUE数据集的预处理器processors
-from transformers import glue_processors as processors
+from transformers_01 import glue_processors as processors
 
 # 从transformers中导入GLUE数据集中的特征处理器
-from transformers import glue_convert_examples_to_features as convert_examples_to_features
+from transformers_01 import glue_convert_examples_to_features as convert_examples_to_features
 
 # 设定与日志打印相关的配置
 logger = logging.getLogger(__name__)

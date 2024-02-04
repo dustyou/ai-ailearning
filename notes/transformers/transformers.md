@@ -31,11 +31,11 @@ https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/
 ### 初始化
 
 ```shell
-conda create -n transformers python=3.9
+conda create -n transformers_01 python=3.9
 
 # 激活环境
 conda init
-conda activate transformers
+conda activate transformers_01
 conda deactivate
 ```
 
@@ -79,3 +79,65 @@ https://pytorch.org/
 pip install torch==1.7.1+cu92 torchvision==0.8.2+cu92 torchaudio==0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
+
+
+装包
+
+```shell
+pip install datasets evaluate peft accelerate gradio optimum sentencepiece
+pip install jupyterlab scikit-learn pandas matplotlib tensorboard nltk rouge
+
+```
+
+
+
+hosts修改
+
+```
+185.199.108.133 raw.githubusercontent.com
+185.199.109.133 raw.githubusercontent.com
+185.199.110.133 raw.githubusercontent.com
+185.199.111.133 raw.githubusercontent.com
+2606:50c0:8000:154 raw.githubusercontent.com
+2606:50c0:8001:154 raw.githubusercontent.com
+2606:50c0:8002:154 raw.githubusercontent.com
+2606:50c0:8003:154 raw.githubusercontent.com
+```
+
+
+
+### pycharm使用和配置jupyter
+
+https://zhuanlan.zhihu.com/p/667528990?utm_id=0
+
+
+
+### conda命令
+
+https://www.jb51.net/python/301666gz8.htm#_label3
+
+```
+conda create -n transformers_01 python=3.9
+
+# 激活环境
+conda init
+conda activate transformers_01
+conda deactivate
+# 删除环境
+conda remove -n test --all
+# clone环境
+conda create -n NewName --clone OldName #把环境 OldName 重命名成 NewName
+
+conda config --show
+
+
+conda config --remove envs_dirs  D:\ProgramFiles\condadata\envs
+```
+
+修改配置, 解决c盘占满问题
+
+http://www.taodudu.cc/news/show-2776654.html?action=onClick
+
+
+
+配置文件位置: .condarc
