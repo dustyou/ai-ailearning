@@ -141,3 +141,31 @@ http://www.taodudu.cc/news/show-2776654.html?action=onClick
 
 
 配置文件位置: .condarc
+
+
+
+
+
+## 设置transformers从镜像网站下载模型
+
+在import pipline之前加这一句
+
+```python
+import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+```
+
+
+
+
+
+```python
+import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+hf_endpoint = os.getenv("HF_ENDPOINT")
+print(hf_endpoint)
+from transformers import pipeline
+
+pipe = pipeline("text-classification")
+pipe(["very good!", "vary bad!"])
+```
