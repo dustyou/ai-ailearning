@@ -148,7 +148,9 @@ http://www.taodudu.cc/news/show-2776654.html?action=onClick
 
 ## 设置transformers从镜像网站下载模型
 
-在import pipline之前加这一句
+参考: https://blog.csdn.net/popboy29/article/details/135512259
+
+在from transformers import pipeline之前加下面的代码
 
 ```python
 import os
@@ -157,7 +159,7 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 
 
-
+注意, 一定要在 from transformers import pipeline之前加, 否则不生效
 
 ```python
 import os
@@ -169,3 +171,35 @@ from transformers import pipeline
 pipe = pipeline("text-classification")
 pipe(["very good!", "vary bad!"])
 ```
+# windows创建文件夹链接
+```cmd
+mklink /D <Link> <Target>
+
+mklink /D C:\Users\Michael\AppData\Roaming\Python1 E:\C_Cache\Users\Michael\AppData\Roaming\Python
+
+```
+
+# 使用huggingface-cli下载模型
+1 Hugging Face
+使用 Hugging Face 官方提供的 huggingface-cli 命令行工具。安装依赖:
+
+pip install -U huggingface_hub
+-U 意思为安装最新版本，若已经安装则更新至最新版本
+
+然后新建 python 文件，填入以下代码，运行即可。
+
+resume-download：断点续下
+local-dir：本地存储路径。（linux 环境下需要填写绝对路径）
+
+
+## 下载模型
+```angular2html
+import os
+os.system('huggingface-cli download --resume-download internlm/internlm-chat-7b --local-dir your_path')
+
+huggingface-cli download --resume-download internlm/internlm-chat-7b --local-dir your_path
+
+huggingface-cli download --resume-download hfl/chinese-macbert-large
+```
+
+直接在命令行中使用也可，会提示使用该方法更快
